@@ -350,16 +350,16 @@ class TransientNLOSPath(TransientADIntegrator):
                 self._sample_hidden_geometry_position(
                     ref=si, scene=scene, sample2=sample2, active=retry_rs),
                 ps_hg)
-            successful_retries = retry_rs & dr.neq(ps_hg.pdf, 0.0)
+            successful_retries = retry_rs  # & dr.neq(ps_hg.pdf, 0.0)
             # check visibility
             d = mi.Vector3f(ps_hg.p - si.p)
             dist = dr.norm(d)
             d /= dist
-            cos_theta_i = dr.dot(si.n, d)
-            cos_theta_g = dr.dot(ps_hg.n, -d)
+            cos_theta_i = dr.abs(dr.dot(si.n, d))
+            cos_theta_g = dr.abs(dr.dot(ps_hg.n, -d))
             pdf_hg = dr.select(
                 retry_rs,
-                pdf_hg + ps_hg.pdf * dr.sqr(dist) / dr.abs(cos_theta_g),
+                pdf_hg + 1 * dist / dr.abs(cos_theta_g),
                 pdf_hg
             )
             successful_retries &= (cos_theta_i > dr.epsilon(mi.Float)) & \
@@ -367,7 +367,8 @@ class TransientNLOSPath(TransientADIntegrator):
             retry_rs &= ~successful_retries
             retry_rs &= iters_rs < max_rs_iterations
         active &= (cos_theta_i > dr.epsilon(mi.Float)) & \
-            (cos_theta_g > dr.epsilon(mi.Float))
+            (cos_theta_g > dr.epsilon(mi.Float)) & \
+            (dr.norm(ps_hg.p - si.p) > mi.Float(0.01))
 
         wo = si.to_local(d)
         bsdf_spec = bsdf.eval(ctx=bsdf_ctx, si=si, wo=wo, active=active)
