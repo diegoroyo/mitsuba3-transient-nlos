@@ -60,6 +60,12 @@ class TransientHDRFilm(mi.Film):
         idd = (distance - self.start_opl) / self.bin_width_opl
         coords = mi.Vector3f(pos.x, pos.y, idd)
         mask = (idd >= 0) & (idd < self.temporal_bins)
+        # Make red stuff 10000x as intense
+        spec = dr.select(
+            spec[0] > spec[1] + dr.epsilon(mi.Float),
+            spec * 10000.0,
+            spec
+        )
         self.transient.put(
             pos=coords,
             wavelengths=wavelengths,
